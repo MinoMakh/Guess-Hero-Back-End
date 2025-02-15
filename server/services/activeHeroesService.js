@@ -1,4 +1,5 @@
 const repository = require("../repositories/heroRepository");
+const logger = require("../utils/logger");
 
 let activeHeroes = [];
 let todayHeroes = {
@@ -10,6 +11,7 @@ let todayHeroes = {
 
 // Get today's heroes
 function getTodayHeros() {
+  logger.info("Fetching today's heroes.");
   return todayHeroes || null;
 }
 
@@ -29,21 +31,32 @@ function timeUntilMidnightUTC2() {
     0
   );
 
+  logger.info(`Calculated time until next midnight UTC+2: ${nextMidnightUTC2 - currentUTC2} ms.`);
   return nextMidnightUTC2 - currentUTC2;
 }
 
 // Function to update today's heroes
 async function updateTodayHeroes() {
-  console.log("Updating today's heroes...");
+  logger.info("Updating today's heroes...");
 
   // Remove old heroes from activeHeroes
   activeHeroes = activeHeroes.filter(
     (hero) => !Object.values(todayHeroes).flat().includes(hero)
   );
+  logger.info("Removed old heroes from activeHeroes.");
 
   while (activeHeroes.length < 20) {
-    const hero = await repository.fetchRandomHero();
-    addHero(hero);
+    try {
+      const hero = await repository.fetchRandomHero();
+      if (hero) {
+        addHero(hero);
+        logger.info(`Added hero: ${hero.name}`);
+      } else {
+        logger.warn("No hero fetched. Skipping addition.");
+      }
+    } catch (error) {
+      logger.error("Error fetching random hero:", error);
+    }
   }
 
   const shuffled = [...activeHeroes].sort(() => Math.random() - 0.5);
@@ -53,11 +66,11 @@ async function updateTodayHeroes() {
   todayHeroes.arts = shuffled.slice(2, 3);
   todayHeroes.emojis = shuffled.slice(3, 4);
 
-  console.log(
-    "Today's heroes updated:",
-    Object.keys(todayHeroes)
-      .map((mode) => `${mode}: ${todayHeroes[mode].map((h) => h.name)}`)
-      .join(", ")
+  logger.info(
+    "Today's heroes updated: " +
+      Object.keys(todayHeroes)
+        .map((mode) => `${mode}: ${todayHeroes[mode].map((h) => h.name)}`)
+        .join(", ")
   );
 
   // Schedule the next update at the next midnight UTC+2
@@ -66,7 +79,10 @@ async function updateTodayHeroes() {
 
 // Adds a hero while maintaining activeHeroes <= 30
 function addHero(hero) {
-  if (activeHeroes.some((h) => h.name === hero.name)) return false;
+  if (activeHeroes.some((h) => h.name === hero.name)) {
+    logger.warn(`Hero ${hero.name} is already in activeHeroes. Skipping.`);
+    return false;
+  }
 
   hero.selectedSplashArtIndex = hero.splashArts
     ? Math.floor(Math.random() * hero.splashArts.length)
@@ -75,7 +91,12 @@ function addHero(hero) {
   hero.hints.sort(() => Math.random() - 0.5);
 
   activeHeroes.push(hero);
-  while (activeHeroes.length > 30) activeHeroes.shift();
+  logger.info(`Hero ${hero.name} added to activeHeroes.`);
+
+  while (activeHeroes.length > 30) {
+    activeHeroes.shift();
+    logger.info("Removed oldest hero from activeHeroes to maintain size <= 30.");
+  }
 
   return true;
 }

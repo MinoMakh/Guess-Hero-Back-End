@@ -61,10 +61,10 @@ const heroes = [
     hints: [
       "Red and blue suit.",
       "He was once bitten.",
-      "Oone of Marvel's most famous and beloved characters.",
+      "One of Marvel's most famous and beloved characters.",
       "He has a famous uncle",
       "Fights crime in New York City.",
-      "founding member of the Avengers and also a high school student.",
+      "Founding member of the Avengers and also a high school student.",
       "His biggest strength is his agility and reflexes.",
       "He swings through the city using webs.",
       "This hero's alter ego works as a photographer.",

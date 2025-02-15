@@ -1,7 +1,8 @@
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const fs = require("fs");
 const path = require("path");
-require('dotenv').config();
+require("dotenv").config();
+const logger = require("../utils/logger");
 
 // Connection string
 const uri = process.env.MONGODB_URI;
@@ -27,9 +28,11 @@ async function fetchRandomHero() {
       .aggregate([{ $sample: { size: 1 } }])
       .toArray();
 
+    logger.info("Fetched random hero successfully");
     return randomHero[0];
   } catch (error) {
-    console.error("An error ocurred while fetching random hero.", error);
+    logger.error("An error occurred while fetching random hero.", error);
+    throw new Error("Error fetching random hero.");
   }
 }
 
@@ -45,12 +48,14 @@ async function fetchHeroesNames() {
       .find({}, { projection: { name: 1, image: 1, _id: 0 } })
       .toArray();
 
+    logger.info(`Fetched ${heroNames.length} hero names successfully.`);
     return heroNames.map((hero) => ({
       name: hero.name,
       image: hero.image,
     }));
   } catch (error) {
-    console.error("An error ocurred while fetching heroes names.", error);
+    logger.error("An error occurred while fetching heroes names.", error);
+    throw new Error("Error fetching heroes names.");
   }
 }
 
@@ -85,9 +90,10 @@ async function addHeroes(heroes) {
 
     // Insert processed heroes into the database
     const result = await collection.insertMany(processedHeroes);
-    console.log(`Inserted ${result.insertedCount} heroes.`);
+    logger.info(`Inserted ${result.insertedCount} heroes successfully.`);
   } catch (error) {
-    console.error("An error occurred while adding heroes:", error);
+    logger.error("An error occurred while adding heroes:", error);
+    throw new Error("Error adding heroes.");
   } finally {
     await client.close();
   }
@@ -102,12 +108,13 @@ async function removeDB() {
 
     // Remove all documents from the collection
     const result = await collection.deleteMany({});
-    console.log(`Removed ${result.deletedCount} heroes from the database.`);
+    logger.info(`Removed ${result.deletedCount} heroes from the database.`);
   } catch (error) {
-    console.error(
+    logger.error(
       "An error occurred while removing the database entries:",
       error
     );
+    throw new Error("Error removing heroes.");
   } finally {
     await client.close();
   }
